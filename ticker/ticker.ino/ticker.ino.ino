@@ -50,7 +50,6 @@
 
 // Other Libraries
 #include <Regexp.h> // Regex (Nick Gammon)
-//#include "LED_Display_Wrapper.h" // (Darren Dignam)
 #include "time.h"
 #include "math.h"
 
@@ -77,10 +76,10 @@ String stocks[] = {"MSFT", "AAPL", "FB", "BP", "NFLX"};
 //////////////////////////////////////////////////////////////////////////////
 // Enter the ssids and passwords for the wifi access point(s) to be used.
 //
-const char* wifiSSID01     = "BPS-24";
-const char* wifiPassword01 = "moosetracks16";
-const char* wifiSSID02     = "Trevor-Guest";
-const char* wifiPassword02 = "Tr3v0rd@y";
+const char* wifiSSID01     = "wifi_ssid_1";
+const char* wifiPassword01 = "password_1";
+const char* wifiSSID02     = "wifi_ssid_2";
+const char* wifiPassword02 = "password_2";
 //
 //////////////////////////////////////////////////////////////////////////////
 
