@@ -16,13 +16,9 @@
     The Arduino ESP32 libraries:
         https://github.com/wemos/Arduino_ESP32#installation-instructions
 
-    The AdaFruit LED Backbackpack and GFX libraries:
-        https://github.com/adafruit/Adafruit-GFX-Library
-        https://github.com/adafruit/Adafruit_LED_Backpack
-
-    The Adafruit Backpack library dosnt support the '.' full stop, and I didnt like some of their font
-    choices for the number digits, so I have created a modified version:
-        https://github.com/darrendignam/Adafruit_LED_Backpack
+    The ESP32-TTGO OLED libraries:
+        https://github.com/osresearch/esp32-ttgo.  Decompress and copy the
+    OLED folder into arduino libraries folder.
 
     If using ESP32 TTGO with 128x64 pixel OLED display and WiFi, do the following:
     Install: CP210x USB to UART Bridge VCP Drivers from,
@@ -31,9 +27,7 @@
     Use Upload Speed: 921600
     Use Board: ESP32 Dev Module
 
-    Get OLED library: https://github.com/osresearch/esp32-ttgo.  Decompress and copy the
-    OLED folder into arduino libraries folder.
-
+   
     THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
     WARRANTY.  IN PARTICULAR,  THE AUTHOR MAKES NO REPRESENTATION
     OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
