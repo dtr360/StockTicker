@@ -74,10 +74,10 @@ String stocks[] = {"MSFT", "AAPL", "FB", "BP", "NFLX"};
 //////////////////////////////////////////////////////////////////////////////
 // Enter the ssids and passwords for the wifi access point(s) to be used.
 //
-const char* wifiSSID01     = "BPS-24";
-const char* wifiPassword01 = "moosetracks16";
-const char* wifiSSID02     = "Trevor-Guest";
-const char* wifiPassword02 = "Tr3v0rd@y";
+const char* wifiSSID01     = "wifiSSID01";
+const char* wifiPassword01 = "password1";
+const char* wifiSSID02     = "wifiSSID02";
+const char* wifiPassword02 = "password2";
 //
 //////////////////////////////////////////////////////////////////////////////
 
