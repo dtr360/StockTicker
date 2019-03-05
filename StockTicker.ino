@@ -130,12 +130,8 @@ bool marketOpen() {
     marketOpen = difftime(now, mktime(&openTime)) > 0 &&
                  difftime(now, mktime(&closeTime)) < 0;
   }
-  //if (!marketOpen)
-    //Serial.println("\nMarket is closed.");
-//    display.clear();
-//    display.drawStringMaxWidth(0, 6, 128, "Market is closed.");
-//    display.display();
-//    delay(2000);
+  //if (!marketOpen) // for testing
+    //Serial.println("\nMarket is closed."); // for testing
 
   return marketOpen;
 }
