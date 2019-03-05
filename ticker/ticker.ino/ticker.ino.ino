@@ -31,7 +31,8 @@
     Use Upload Speed: 921600
     Use Board: ESP32 Dev Module
 
-    Get OLED library: https://github.com/osresearch/esp32-ttgo. COPY OLED folder into arduino libraries folder.
+    Get OLED library: https://github.com/osresearch/esp32-ttgo.  Decompress and copy the
+    OLED folder into arduino libraries folder.
 
     THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
     WARRANTY.  IN PARTICULAR,  THE AUTHOR MAKES NO REPRESENTATION
@@ -95,7 +96,6 @@ String     stocksQuotes[stocksLen];  // array of strings to hold quote data
 bool       haveQuoteData   = false;
 
 WiFiMulti wifiMulti;
-//LED_Display_Wrapper LEDdisplay = LED_Display_Wrapper();
 
 TaskHandle_t TaskGetQuotesH;
 TaskHandle_t TaskDisplayH;
