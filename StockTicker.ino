@@ -1,5 +1,5 @@
 
-/*  stock_ticker.ino
+/*  StockTicker.ino
 
     Written by Daniel Rencricca <drencricca@gmail.com>.
 
