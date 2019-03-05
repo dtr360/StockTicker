@@ -1,7 +1,7 @@
 
 /*  stock_ticker.ino
 
-    Written by Daniel Rencricca <drencricca@gmai.com>.
+    Written by Daniel Rencricca <drencricca@gmail.com>.
 
     This program obtains stock quote data by scraping it from the cnbc.com
     website and displays this information on an LED display.
