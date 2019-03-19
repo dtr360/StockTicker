@@ -476,5 +476,5 @@ void setup()
 
 void loop()
 {
-  delay(100);  // this should prevent "Task watchdog triggeed" error.
+  delay(100);  // this should prevent "Task watchdog triggered" error.
 } // loop()
