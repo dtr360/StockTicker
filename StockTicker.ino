@@ -57,8 +57,8 @@
 #define MARKET_CLOSE_HR   16 // hour of stock market close (24 hr) EST
 #define MARKET_CLOSE_MIN   0 // minutes of stock market close EST
 #define DISP_DATE_CNT     20 // displays date after every 20 quotes
-//#define USING_SSD1306
-#define USING_LOLIND32
+#define USING_SSD1306
+//#define USING_LOLIND32
 
 #ifdef USING_LOLIND32
 SSD1306 display(0x3c, 21, 18);  // SDA pin 21 and SLC pin 18
