@@ -47,41 +47,46 @@
 
 // Other Libraries
 #include <Regexp.h> // Regex (Nick Gammon)
-//#include "LED_Display_Wrapper.h" // (Darren Dignam)
 #include "time.h"
 #include "math.h"
 
 // Financial markets open at 9:30am and close at 16:30pm. We only need to
 // update quotes during this time period.
-#define MARKET_OPEN_HR     9
-#define MARKET_OPEN_MIN   30
-#define MARKET_CLOSE_HR   16
-#define MARKET_CLOSE_MIN   0
+#define MARKET_OPEN_HR     9 // hour of stock market open EST
+#define MARKET_OPEN_MIN   30 // minutes of stock market open EST
+#define MARKET_CLOSE_HR   16 // hour of stock market close (24 hr) EST
+#define MARKET_CLOSE_MIN   0 // minutes of stock market close EST
 #define DISP_DATE_CNT     20 // displays date after every 20 quotes
-#define USING_SSD1306
+//#define USING_SSD1306
+#define USING_LOLIND32
+
+#ifdef USING_LOLIND32
+SSD1306 display(0x3c, 21, 18);  // SDA pin 21 and SLC pin 18
+#endif
 
 #ifdef USING_SSD1306
-SSD1306 display(0x3c, 4, 15);
-OLEDDisplayUi ui(&display);
+SSD1306 display(0x3c, 4, 15); // SDA pin 4 and SLC pin 15
 #endif
+
+OLEDDisplayUi ui(&display);
 
 //////////////////////////////////////////////////////////////////////////////
 // The stocks array holds the ticker symbols for the securities for which
 // to get quote data. Update this list to include whatever stocks you want.
 //
-String stocks[] = {"MSFT", "AAPL", "FB", "BP", "NFLX"};
+String stocks[] = {"MSFT", "AAPL", "FB", "BP", "NFLX", "GOOG", "MU"};
 //
 //////////////////////////////////////////////////////////////////////////////
 // Enter the ssids and passwords for the wifi access point(s) to be used.
 //
-const char* wifiSSID01     = "wifiSSID01";
-const char* wifiPassword01 = "password1";
-const char* wifiSSID02     = "wifiSSID02";
-const char* wifiPassword02 = "password2";
+const char* wifiSSID01     = "SSID01";
+const char* wifiPassword01 = "PASSWORD01";
+const char* wifiSSID02     = "SSID02";
+const char* wifiPassword02 = "PASSWORD02";
 //
 //////////////////////////////////////////////////////////////////////////////
 
-int  intervalUpdate  = 120000;  // wait-time to update quote data (milliseconds)
+int  intervalUpdate  = 240000;  // wait-time to update quotes (milliseconds)
 long lastUpdateTime  = -intervalUpdate; // init
 
 const int   displayWidth = 14; // number of characters for display
@@ -90,10 +95,9 @@ const char* spacer       = "  "; // space between quotes when displayed
 
 const byte stocksLen = sizeof(stocks)/sizeof(stocks[0]);
 String     stocksQuotes[stocksLen];  // array of strings to hold quote data
-bool       haveQuoteData   = false;
+bool       haveQuoteData   = false;  // flags all quotes obtained at least once
 
 WiFiMulti wifiMulti;
-//LED_Display_Wrapper LEDdisplay = LED_Display_Wrapper();
 
 TaskHandle_t TaskGetQuotesH;
 TaskHandle_t TaskDisplayH;
@@ -110,9 +114,9 @@ bool marketOpen() {
   time(&now);
   timeinfo = localtime (&now);
 
-  // char buffer [80];   // for testing
-  // strftime (buffer, 80, "Day of week: %w  Time: %H:%M ", timeinfo);   // for testing
-  // Serial.println(buffer);   // for testing
+  // char buffer [80];  // for testing
+  // strftime (buffer, 80, "Day of week: %w  Time: %H:%M ", timeinfo);  // for testing
+  // Serial.println(buffer);  // for testing
 
   tm openTime  = *localtime(&now);
   tm closeTime = *localtime(&now);
@@ -123,17 +127,17 @@ bool marketOpen() {
   closeTime.tm_hour = MARKET_CLOSE_HR;
   closeTime.tm_min  = MARKET_CLOSE_MIN;
 
-  bool marketOpen;
+  bool marketIsOpen;
 
   // check if it is a weekday during market hours
   if (timeinfo->tm_wday > 0 && timeinfo->tm_wday < 7) {
-    marketOpen = difftime(now, mktime(&openTime)) > 0 &&
+    marketIsOpen = difftime(now, mktime(&openTime)) > 0 &&
                  difftime(now, mktime(&closeTime)) < 0;
   }
-  //if (!marketOpen) // for testing
-    //Serial.println("\nMarket is closed."); // for testing
+  //if (!marketIsOpen) // for testing
+  //  Serial.println("\nMarket is closed."); // for testing
 
-  return marketOpen;
+  return marketIsOpen;
 }
 
 void chopDecimalPlaces(char* numStr) {
@@ -274,6 +278,7 @@ void getQuote(int index) {
   //Serial.println(millis() - startTime); // for testing
 } //getQuote
 
+
 void TaskDisplay(void* pvParameters) {
   /**
     Task that handles constantly displaying stock quote data as a ticker tape.
@@ -315,7 +320,7 @@ void TaskDisplay(void* pvParameters) {
       index = (index + 1) % stocksLen;
 
       // Display the date & time after a certain number of quotes have have been displayed.
-      quoteCnt = (quoteCnt + 1) % DISP_DATE_CNT; // reset counter
+      quoteCnt = (quoteCnt + 1) % DISP_DATE_CNT; // set counter
       if (quoteCnt == 0) {
         time_t      now;
         struct tm*  timeinfo;
@@ -325,7 +330,7 @@ void TaskDisplay(void* pvParameters) {
         strftime (dateTime, 80, " ... %B, %d %Y  %I:%M %p ...   ", timeinfo);
         nextUp = dateTime;  // add date and time to ticker display
       }
-      else if (stocksQuotes[index].length() == 0) {
+      else if (stocksQuotes[index].length() == 0) { // no quote yet, so updating
         nextUp = updatingMsg;
       }
       else {
@@ -442,7 +447,7 @@ void setup()
   }
 
   display.clear();
-  display.drawStringMaxWidth(0, 6, 128, "Fetching Data...");
+  display.drawStringMaxWidth(0, 6, 128, "Fetching quote data...");
   display.display();
 
   // Create two tasks, one on each core. One task handles displaying data and the other task
