@@ -492,7 +492,7 @@ void setup()
   display.clear();
   String wifiStatus = String("WiFi connected at: ") + (char*) WiFi.localIP().toString().c_str();
   #ifdef DEBUG_PRINT
-  Serial.print(wifiStatus); // for testing
+  Serial.println(wifiStatus); // for testing
   #endif
   display.drawStringMaxWidth(0, 6, 128, wifiStatus);
   display.display();
