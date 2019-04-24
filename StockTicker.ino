@@ -99,7 +99,6 @@ const char* spacer       = "  "; // space between quotes when displayed
 const byte stocksLen = sizeof(stocks)/sizeof(stocks[0]);
 String     stocksQuotes[stocksLen];  // array of strings to hold quote data
 bool       haveQuoteData = false;    // flags all quotes obtained at least once
-bool       displayOn = true;         // display is on
 
 WiFiMulti wifiMulti;
 
@@ -403,13 +402,14 @@ void TaskControl(void* pvParameters) {
     @return nothing.
   */
 
-  time_t           now;
-  struct tm*       timeinfo;
+  bool        displayOn = true; // flags display is on/updating
+  time_t      now;
+  struct tm*  timeinfo;
+    
   const TickType_t xDelay = intervalUpdate / portTICK_PERIOD_MS;
 
   time(&now);
   timeinfo = localtime (&now);
-  displayOn = true;
     
   for (;;) { // repeat forever 
 
