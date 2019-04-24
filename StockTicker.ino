@@ -57,6 +57,8 @@
 #define MARKET_CLOSE_HR   16 // hour of stock market close (24 hr) EST
 #define MARKET_CLOSE_MIN   0 // minutes of stock market close EST
 #define DISP_DATE_CNT     20 // displays date after every 20 quotes
+#define ACTIVE_ON_HR       7 // hour to start displaying/checking data
+#define ACTIVE_OFF_HR     19 // hour to stop diplaying/checking data
 #define USING_SSD1306
 //#define USING_LOLIND32
 
@@ -74,20 +76,19 @@ OLEDDisplayUi ui(&display);
 // The stocks array holds the ticker symbols for the securities for which
 // to get quote data. Update this list to include whatever stocks you want.
 //
-String stocks[] = {"MSFT", "AAPL", "FB", "BP", "NFLX", "GOOG", "MU"};
+String stocks[] = {"MSFT", "AAPL", "FB", "GOOG"};
 //
 //////////////////////////////////////////////////////////////////////////////
 // Enter the ssids and passwords for the wifi access point(s) to be used.
 //
-const char* wifiSSID01     = "SSID01";
-const char* wifiPassword01 = "PASSWORD01";
-const char* wifiSSID02     = "SSID02";
-const char* wifiPassword02 = "PASSWORD02";
+const char* wifiSSID01     = "YOUR_SSID1";
+const char* wifiPassword01 = "YOUR_PW_1";
+const char* wifiSSID02     = "YOUR_SSID2";
+const char* wifiPassword02 = "YOUR_PW_2";
 //
 //////////////////////////////////////////////////////////////////////////////
 
-int  intervalUpdate  = 240000;  // wait-time to update quotes (milliseconds)
-long lastUpdateTime  = -intervalUpdate; // init
+int  intervalUpdate  = 300000;  // wait-time to update quotes (milliseconds)
 
 const int   displayWidth = 14; // number of characters for display
 const char* updatingMsg  = "UPDATING.............  "; // message if quote not avail
@@ -96,11 +97,14 @@ const char* spacer       = "  "; // space between quotes when displayed
 const byte stocksLen = sizeof(stocks)/sizeof(stocks[0]);
 String     stocksQuotes[stocksLen];  // array of strings to hold quote data
 bool       haveQuoteData   = false;  // flags all quotes obtained at least once
+bool       displayOn = true;         // display is on
 
 WiFiMulti wifiMulti;
 
 TaskHandle_t TaskGetQuotesH;
 TaskHandle_t TaskDisplayH;
+TaskHandle_t TaskControlH;
+
 
 bool marketOpen() {
   /**
@@ -129,13 +133,13 @@ bool marketOpen() {
 
   bool marketIsOpen;
 
-  // check if it is a weekday during market hours
+  // check if it is a weekday during market hours (Mon=1, Fri=5)
   if (timeinfo->tm_wday > 0 && timeinfo->tm_wday < 7) {
     marketIsOpen = difftime(now, mktime(&openTime)) > 0 &&
                  difftime(now, mktime(&closeTime)) < 0;
   }
-  //if (!marketIsOpen) // for testing
-  //  Serial.println("\nMarket is closed."); // for testing
+  if (!marketIsOpen) // for testing
+    Serial.println("\nMarket is closed."); // for testing
 
   return marketIsOpen;
 }
@@ -310,8 +314,8 @@ void TaskDisplay(void* pvParameters) {
     //Serial.print("TaskDisplay running on core ");  // for testing
     //Serial.println(xPortGetCoreID());              // for testing
 
-    displayText.remove(0, 1);
-    displayText += nextUp.charAt(nPos);
+    displayText.remove(0, 1); // remove first character from displayText
+    displayText += nextUp.charAt(nPos); // add next character to displayText
 
     nPos += 1;
 
@@ -353,36 +357,81 @@ void TaskGetQuotes(void* pvParameters) {
     @return nothing.
   */
   int  stocksIndex = 0;
+  const TickType_t xDelay = intervalUpdate / portTICK_PERIOD_MS;
   
   for (;;) { // repeat forever
-
     // Get quote data only on scheduled interval
-    if (millis() > lastUpdateTime + intervalUpdate) {
+    Serial.print("TaskGetQuotes running on core ");   // for testing
+    Serial.println(xPortGetCoreID());                 // for testing
 
-      //Serial.print("TaskGetQuotes running on core ");   // for testing
-      //Serial.println(xPortGetCoreID());                 // for testing
-
-      // Only get quote data one time when market is closed. Once we have read quotes
-      // for all the stocks, then haveQuoteData is true so we don't needlessly update the
-      // quote data again when the market is closed.
-      if (marketOpen() || !haveQuoteData) {
-        //Serial.printf("Getting quote for %s\n", stocks[stocksIndex].c_str());  // for testing
-        getQuote(stocksIndex);
-        stocksIndex += 1;
-        if (stocksIndex == stocksLen) {
-          stocksIndex = 0;
-          lastUpdateTime = millis();
-          haveQuoteData = true;
-        }
-      }
-      else { // if market is closed and have loaded all quote data
-        lastUpdateTime = millis();
+    // Only get quote data one time when market is closed. Once we have read quotes
+    // for all the stocks, then haveQuoteData is true so we don't needlessly update the
+    // quote data again when the market is closed.
+    if (marketOpen() || !haveQuoteData) {
+      Serial.printf("Getting quote for %s\n", stocks[stocksIndex].c_str());  // for testing
+      getQuote(stocksIndex);
+      stocksIndex += 1;
+      if (stocksIndex == stocksLen) {
+        stocksIndex = 0;
+        vTaskDelay(xDelay);
+        haveQuoteData = true;
       }
     }
+    else { // if market is closed and have loaded all quote data
+      vTaskDelay(xDelay);
+    }
+
     delay(100);
   } // for loop
 }
 
+
+void TaskControl(void* pvParameters) {
+  /**
+    Task that handles setting the display on or off depending on the
+    time of day.
+    @param pvParameters a value that passed to the task - Not used.
+    @return nothing.
+  */
+
+  time_t           now;
+  struct tm*       timeinfo;
+  const TickType_t xDelay = intervalUpdate / portTICK_PERIOD_MS;
+
+  time(&now);
+  timeinfo = localtime (&now);
+  displayOn = true;
+    
+  for (;;) { // repeat forever 
+    Serial.print("TaskControl running on core ");  // for testing
+    Serial.println(xPortGetCoreID());              // for testing
+    
+    time(&now);
+    timeinfo = localtime (&now);
+
+    if (timeinfo->tm_hour >= ACTIVE_ON_HR && timeinfo->tm_hour < ACTIVE_OFF_HR) {
+      if (!displayOn) {
+        displayOn = true;
+        Serial.println("Resuming display task....");
+        vTaskResume(TaskDisplayH);
+        vTaskResume(TaskGetQuotesH);
+      }
+    }
+    else {
+      if (displayOn) {
+        displayOn = false;
+        Serial.println("Delaying display task....");  // for testing
+        display.display(); // this is needed for some reason
+        vTaskSuspend(TaskDisplayH);
+        vTaskSuspend(TaskGetQuotesH);
+        display.clear();
+        display.display();
+      }
+    }
+    delay(500); // this should prevent "Task watchdog got triggered" error.
+    vTaskDelay(xDelay);
+  } // for loop
+}
 
 void setup()
 {
@@ -454,27 +503,38 @@ void setup()
   // handles scraping quote data from a website.
   xTaskCreatePinnedToCore(
     TaskGetQuotes,    /* Function to implement the task */
-    "TaskGetQuotesH", /* task handle */
+    "TaskGetQuotes",  /* Name of the task */
     10000,            /* Stack size in words */
     NULL,             /* Task input parameter */
-    0,                /* Priority of the task */
-    NULL,             /* Task handle. */
+    1,                /* Priority of the task (highest is 4) */
+    &TaskGetQuotesH,  /* Task handle. */
     0);               /* Core where the task should run */
 
   delay(30000); // allow time to get some quote data
 
   xTaskCreatePinnedToCore(
     TaskDisplay,      /* Function to implement the task */
-    "TaskDisplayH",   /* Task handle */
+    "TaskDisplay",    /* Name of the task */
     10000,            /* Stack size in words */
     NULL,             /* Task input parameter */
-    2,                /* Priority of the task */
-    NULL,             /* Task handle. */
+    2,                /* Priority of the task (highest is 4) */
+    &TaskDisplayH,    /* Task handle. */
+    1);               /* Core where the task should run */
+
+  xTaskCreatePinnedToCore(
+    TaskControl,      /* Function to implement the task */
+    "TaskControl",    /* Name of the task */
+    10000,            /* Stack size in words */
+    NULL,             /* Task input parameter */
+    0,                /* Priority of the task (highest is 4) */
+    &TaskControlH,    /* Task handle. */
     1);               /* Core where the task should run */
 
 } // setup()
 
 void loop()
 {
-  delay(100);  // this should prevent "Task watchdog triggered" error.
+  delay(1000);  // this should prevent "Task watchdog got triggered" error.
 } // loop()
+
+  
