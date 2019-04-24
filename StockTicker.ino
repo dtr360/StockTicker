@@ -31,7 +31,7 @@
       Board: ESP32 Dev Module
 
     THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
-    WARRANTY.  IN PARTICULAR,  THE AUTHOR MAKES NO REPRESENTATION
+    WARRANTY.  IN PARTICULAR, THE AUTHOR MAKES NO REPRESENTATION
     OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
     SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
 */
@@ -59,6 +59,8 @@
 #define DISP_DATE_CNT     20 // displays date after every 20 quotes
 #define ACTIVE_ON_HR       7 // hour to start displaying/checking data
 #define ACTIVE_OFF_HR     19 // hour to stop diplaying/checking data
+#define DEBUG_PRINT
+
 #define USING_SSD1306
 //#define USING_LOLIND32
 
@@ -81,10 +83,10 @@ String stocks[] = {"MSFT", "AAPL", "FB", "GOOG"};
 //////////////////////////////////////////////////////////////////////////////
 // Enter the ssids and passwords for the wifi access point(s) to be used.
 //
-const char* wifiSSID01     = "YOUR_SSID1";
-const char* wifiPassword01 = "YOUR_PW_1";
-const char* wifiSSID02     = "YOUR_SSID2";
-const char* wifiPassword02 = "YOUR_PW_2";
+const char* wifiSSID01     = "SSID01";
+const char* wifiPassword01 = "Password01";
+const char* wifiSSID02     = "SSID02";
+const char* wifiPassword02 = "Password02";
 //
 //////////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +98,7 @@ const char* spacer       = "  "; // space between quotes when displayed
 
 const byte stocksLen = sizeof(stocks)/sizeof(stocks[0]);
 String     stocksQuotes[stocksLen];  // array of strings to hold quote data
-bool       haveQuoteData   = false;  // flags all quotes obtained at least once
+bool       haveQuoteData = false;    // flags all quotes obtained at least once
 bool       displayOn = true;         // display is on
 
 WiFiMulti wifiMulti;
@@ -118,9 +120,11 @@ bool marketOpen() {
   time(&now);
   timeinfo = localtime (&now);
 
-  // char buffer [80];  // for testing
-  // strftime (buffer, 80, "Day of week: %w  Time: %H:%M ", timeinfo);  // for testing
-  // Serial.println(buffer);  // for testing
+   #ifdef DEBUG_PRINT
+   char buffer [80];  // for testing
+   strftime (buffer, 80, "Day of week: %w  Time: %H:%M ", timeinfo);  // for testing
+   Serial.println(buffer);  // for testing
+  #endif
 
   tm openTime  = *localtime(&now);
   tm closeTime = *localtime(&now);
@@ -165,7 +169,6 @@ void chopDecimalPlaces(char* numStr) {
   }
 }
 
-
 void getQuote(int index) {
   /**
     Retrieves quote data from the cnbc.com website via HTTPS GET request. Data is
@@ -176,11 +179,13 @@ void getQuote(int index) {
   const char* host  = "www.cnbc.com";
   const int port    = 443;  // SSL port
   char url[40]      = ""; // url for quote data
-  //int startTime = millis(); // for testing
 
   snprintf(url, sizeof(url), "%s%s", "/quotes/?symbol=",  stocks[index].c_str());
 
-  //Serial.printf("Requesting URL: %s\n", url);  // for testing
+  #ifdef DEBUG_PRINT
+  int startTime = millis(); // for testing
+  Serial.printf("Requesting URL: %s\n", url);  // for testing
+  #endif
 
   // Create a secure client that can connect to the specified internet IP address
   WiFiClientSecure    clientS; // using HTTPS connection
@@ -277,9 +282,11 @@ void getQuote(int index) {
   // Replace element in stocksQuotes with string containing the quote data
   stocksQuotes[index] = String(stocks[index] + " " + price + " " + dir + change);
 
-  //Serial.println(stocksQuotes[index].c_str()); // for testing
-  //Serial.print("Time Elapsed: "); // for testing
-  //Serial.println(millis() - startTime); // for testing
+  #ifdef DEBUG_PRINT
+  Serial.println(stocksQuotes[index].c_str()); // for testing
+  Serial.print("Time Elapsed: "); // for testing
+  Serial.println(millis() - startTime); // for testing
+  #endif
 } //getQuote
 
 
@@ -310,9 +317,8 @@ void TaskDisplay(void* pvParameters) {
   display.setFont(ArialMT_Plain_24);
 
   for (;;) { // repeat forever
-
-    //Serial.print("TaskDisplay running on core ");  // for testing
-    //Serial.println(xPortGetCoreID());              // for testing
+//    Serial.print("TaskDisplay running on core ");  // for testing
+//    Serial.println(xPortGetCoreID());              // for testing
 
     displayText.remove(0, 1); // remove first character from displayText
     displayText += nextUp.charAt(nPos); // add next character to displayText
@@ -361,8 +367,11 @@ void TaskGetQuotes(void* pvParameters) {
   
   for (;;) { // repeat forever
     // Get quote data only on scheduled interval
+
+    #ifdef DEBUG_PRINT
     Serial.print("TaskGetQuotes running on core ");   // for testing
     Serial.println(xPortGetCoreID());                 // for testing
+    #endif
 
     // Only get quote data one time when market is closed. Once we have read quotes
     // for all the stocks, then haveQuoteData is true so we don't needlessly update the
@@ -403,25 +412,32 @@ void TaskControl(void* pvParameters) {
   displayOn = true;
     
   for (;;) { // repeat forever 
+
+    #ifdef DEBUG_PRINT
     Serial.print("TaskControl running on core ");  // for testing
     Serial.println(xPortGetCoreID());              // for testing
+    #endif
     
     time(&now);
     timeinfo = localtime (&now);
 
     if (timeinfo->tm_hour >= ACTIVE_ON_HR && timeinfo->tm_hour < ACTIVE_OFF_HR) {
       if (!displayOn) {
+        #ifdef DEBUG_PRINT
+        Serial.println("Resuming Display/Quotes tasks.");
+        #endif
         displayOn = true;
-        Serial.println("Resuming display task....");
         vTaskResume(TaskDisplayH);
         vTaskResume(TaskGetQuotesH);
       }
     }
     else {
       if (displayOn) {
+        #ifdef DEBUG_PRINT
+        Serial.println("Suspending Display/Quotes tasks.");
+        #endif
         displayOn = false;
-        Serial.println("Delaying display task....");  // for testing
-        display.display(); // this is needed for some reason
+        display.display(); // this line is needed for some reason
         vTaskSuspend(TaskDisplayH);
         vTaskSuspend(TaskGetQuotesH);
         display.clear();
@@ -475,7 +491,9 @@ void setup()
 
   display.clear();
   String wifiStatus = String("WiFi connected at: ") + (char*) WiFi.localIP().toString().c_str();
-  //Serial.print(wifiStatus); // for testing
+  #ifdef DEBUG_PRINT
+  Serial.print(wifiStatus); // for testing
+  #endif
   display.drawStringMaxWidth(0, 6, 128, wifiStatus);
   display.display();
 
@@ -536,5 +554,3 @@ void loop()
 {
   delay(1000);  // this should prevent "Task watchdog got triggered" error.
 } // loop()
-
-  
