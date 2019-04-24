@@ -480,13 +480,14 @@ void setup()
   wifiMulti.addAP(wifiSSID01, wifiPassword01);
   wifiMulti.addAP(wifiSSID02, wifiPassword02);
 
-  //Serial.println("\nConnecting to WiFi... ");  // for testing
+  #ifdef DEBUG_PRINT
+  Serial.println("\nConnecting to WiFi... ");  // for testing
+  #endif
   display.drawStringMaxWidth(0, 6, 128, "Connecting to WiFi...");
   display.display();
 
   while (wifiMulti.run() != WL_CONNECTED) {
     delay(1000);
-    //Serial.print(".");
   }
 
   display.clear();
