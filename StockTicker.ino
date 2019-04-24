@@ -57,8 +57,8 @@
 #define MARKET_CLOSE_HR   16 // hour of stock market close (24 hr) EST
 #define MARKET_CLOSE_MIN   0 // minutes of stock market close EST
 #define DISP_DATE_CNT     20 // displays date after every 20 quotes
-#define ACTIVE_ON_HR       7 // hour to start displaying/checking data
-#define ACTIVE_OFF_HR     19 // hour to stop diplaying/checking data
+#define ACTIVE_ON_HR       7 // hour to start displaying/updating data
+#define ACTIVE_OFF_HR     19 // hour to stop diplaying/updating data
 #define DEBUG_PRINT
 
 #define USING_SSD1306
